@@ -114,8 +114,8 @@ export default function PixelCalendar({
 
       {/* 요일 헤더 */}
       <div className="grid grid-cols-7 gap-1 mb-1 shrink-0">
-        {DAY_LABELS.map((label) => (
-          <div key={label} className="text-center font-pixel text-[10px] text-border/50 py-2">
+        {DAY_LABELS.map((label, idx) => (
+          <div key={label} className={`text-center font-pixel text-[10px] py-2 ${idx === 0 ? "text-red-500" : idx === 6 ? "text-blue-500" : "text-border/50"}`}>
             {label}
           </div>
         ))}

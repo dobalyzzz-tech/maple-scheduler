@@ -1,26 +1,87 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-parchment: #F4E4C1;
+  --color-dark: #2B2B3D;
+  --color-maple: #FF8C42;
+  --color-expgold: #FFD23F;
+  --color-success: #6BCB77;
+  --color-danger: #FF5252;
+  --color-border: #3A2E2A;
+  --font-pixel: "Jua", sans-serif;
+  --font-pixel-en: "Jua", sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-parchment);
+  color: var(--color-border);
+  font-family: var(--font-pixel);
+  image-rendering: pixelated;
 }
+
+/* 글래스모피즘 박스 */
+.pixel-box {
+  background: rgba(244, 228, 193, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(58, 46, 42, 0.2);
+  border-radius: 16px;
+}
+
+/* 글래스모피즘 버튼 */
+.pixel-btn {
+  background: rgba(255, 140, 66, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: white;
+  border: 1px solid rgba(58, 46, 42, 0.15);
+  border-radius: 10px;
+  font-family: var(--font-pixel);
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.pixel-btn:hover {
+  background: rgba(255, 140, 66, 0.85);
+  transform: scale(1.02);
+}
+.pixel-btn:active {
+  transform: scale(0.97);
+}
+
+/* bg-parchment text-border 버튼 (비활성/보조) - 글래스모피즘 */
+.pixel-btn.bg-parchment {
+  background: rgba(244, 228, 193, 0.5);
+  color: var(--color-border);
+}
+.pixel-btn.bg-parchment:hover {
+  background: rgba(244, 228, 193, 0.7);
+}
+.pixel-btn.bg-success {
+  background: rgba(107, 203, 119, 0.7);
+}
+.pixel-btn.bg-success:hover {
+  background: rgba(107, 203, 119, 0.85);
+}
+.pixel-btn.bg-danger {
+  background: rgba(255, 82, 82, 0.7);
+}
+.pixel-btn.bg-danger:hover {
+  background: rgba(255, 82, 82, 0.85);
+}
+
+/* EXP 바 */
+.exp-bar {
+  background: rgba(58, 46, 42, 0.3);
+  border-radius: 4px;
+  height: 8px;
+  overflow: hidden;
+}
+.exp-fill {
+  background: var(--color-expgold);
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+/* 스크롤바 숨기기 */
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }

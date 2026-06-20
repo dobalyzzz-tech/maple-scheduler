@@ -1,0 +1,229 @@
+"use client";
+
+import { useState, useEffect, useMemo } from "react";
+import { useCharacterStore, expNeeded } from "@/store/useCharacterStore";
+import { useSchedules, useDeleteSchedule } from "@/lib/queries";
+import { LevelUpModal } from "@/components/LevelUpModal";
+import { CompleteButton } from "@/components/CompleteButton";
+import PixelCalendar from "@/components/PixelCalendar";
+import AddQuestModal from "@/components/AddQuestModal";
+import { playLevelUpSound, lowerAllVolume, restoreAllVolume } from "@/lib/sound";
+
+function getTodayStr() {
+  const d = new Date();
+  const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toISOString().slice(0, 10);
+}
+
+const todayStr = getTodayStr();
+
+export default function DashboardPage() {
+  const { level, exp, coins, nickname, title } = useCharacterStore();
+  const [showLevelUp, setShowLevelUp] = useState<number | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editData, setEditData] = useState<{
+    id: string; title: string; memo: string | null;
+    difficulty: number; start_at: string;
+    is_recurring: boolean; recur_rule: string | null;
+  } | null>(null);
+
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth());
+  const [selectedDate, setSelectedDate] = useState<string | null>(todayStr);
+  const [deleteMode, setDeleteMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const { data: monthData } = useSchedules(year, month);
+
+  const selectedInstances = useMemo(() => {
+    if (!monthData || !selectedDate) return [];
+    const day = monthData.find((d) => d.date === selectedDate);
+    return day?.instances ?? [];
+  }, [monthData, selectedDate]);
+
+  const pct = exp / expNeeded(level) * 100;
+  const deleteSchedule = useDeleteSchedule();
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const lv = (e as CustomEvent).detail;
+      playLevelUpSound();
+      lowerAllVolume();
+      setShowLevelUp(lv);
+      setTimeout(() => restoreAllVolume(), 3000);
+    };
+    window.addEventListener("levelup", handler);
+    return () => window.removeEventListener("levelup", handler);
+  }, []);
+
+  const goPrevMonth = () => setMonth((m) => (m === 0 ? (setYear((y) => y - 1), 11) : m - 1));
+  const goNextMonth = () => setMonth((m) => (m === 11 ? (setYear((y) => y + 1), 0) : m + 1));
+
+  const openAddModal = () => {
+    setEditData(null);
+    setModalOpen(true);
+  };
+  const openEditModal = (inst: typeof selectedInstances[number]) => {
+    setEditData({
+      id: inst.scheduleId,
+      title: inst.title,
+      memo: inst.memo,
+      difficulty: inst.difficulty,
+      start_at: `${inst.date}T09:00:00`,
+      is_recurring: false,
+      recur_rule: null,
+    });
+    setModalOpen(true);
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`${selectedIds.size}개의 퀘스트를 삭제할까요?`)) return;
+    selectedIds.forEach((id) => deleteSchedule.mutate(id));
+    setSelectedIds(new Set());
+    setDeleteMode(false);
+  };
+
+  const dayLabel = selectedDate === todayStr ? "오늘의 퀘스트" : `${selectedDate?.slice(5)} 퀘스트`;
+
+  return (
+    <div className="flex-1 flex flex-col px-6 py-4 gap-6 max-w-5xl mx-auto w-full">
+      {/* 상단 HUD */}
+      <div className="pixel-box px-6 py-4 flex items-center gap-6">
+        <div className="text-4xl">🧑‍🎨</div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-4">
+            <span className="font-pixel text-sm text-border truncate">
+              Lv.{level} {nickname}
+            </span>
+            <span className="font-pixel text-xs text-border/80 shrink-0 bg-white/60 px-3 py-1 rounded-lg">🪙 {coins}</span>
+          </div>
+          <div className="text-xs font-pixel text-border/70 mb-2 truncate">{title}</div>
+          <div className="exp-bar w-full mb-1">
+            <div className="exp-fill" style={{ width: `${Math.min(pct, 100)}%` }} />
+          </div>
+          <div className="text-xs font-pixel text-border/60 text-right">
+            {exp} / {expNeeded(level)} EXP
+          </div>
+        </div>
+      </div>
+
+      {/* 캘린더 */}
+      <PixelCalendar
+        year={year}
+        month={month}
+        selectedDate={selectedDate}
+        onSelectDate={setSelectedDate}
+        onPrevMonth={goPrevMonth}
+        onNextMonth={goNextMonth}
+      />
+
+      {/* 퀘스트 목록 (오른쪽 여백) */}
+      <div className="flex justify-end">
+        <div className="w-full max-w-sm pixel-box px-5 py-4 min-h-0">
+            <div className="flex items-center justify-between mb-4 shrink-0">
+              <span className="font-pixel text-sm text-border">📜 {dayLabel}</span>
+              <div className="flex items-center gap-2">
+                {deleteMode ? (
+                  <>
+                    <button
+                      className="pixel-btn px-2 py-1.5 text-[10px] bg-parchment text-border"
+                      onClick={() => { setDeleteMode(false); setSelectedIds(new Set()); }}
+                    >
+                      취소
+                    </button>
+                    <button
+                      className="pixel-btn px-2 py-1.5 text-[10px] bg-danger text-white"
+                      onClick={handleBulkDelete}
+                      disabled={selectedIds.size === 0}
+                    >
+                      {selectedIds.size > 0 ? `${selectedIds.size}개 삭제` : "선택"}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button className="pixel-btn px-2 py-1.5 text-[10px] bg-parchment text-border" onClick={() => setDeleteMode(true)}>
+                      삭제
+                    </button>
+                    <button className="pixel-btn px-2 py-1.5 text-xs" onClick={openAddModal}>
+                      ＋ 추가
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto min-h-0 scrollbar-none">
+              {selectedInstances.length === 0 ? (
+                <div className="text-border/40 font-pixel text-xs text-center py-6">
+                  아직 퀘스트가 없어요. 새 퀘스트를 추가해보세요!
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {selectedInstances.map((inst) => (
+                    <div
+                      key={inst.scheduleId + inst.date}
+                      className={`flex items-center gap-3 px-3 py-2 border border-border/20 rounded-xl ${
+                        deleteMode && selectedIds.has(inst.scheduleId) ? "bg-danger/10 border-danger" : "bg-parchment/40"
+                      }`}
+                    >
+                      {deleteMode ? (
+                        <input
+                          type="checkbox"
+                          className="accent-maple w-4 h-4 shrink-0"
+                          checked={selectedIds.has(inst.scheduleId)}
+                          onChange={() => toggleSelect(inst.scheduleId)}
+                        />
+                      ) : inst.done ? (
+                        <span className="text-success shrink-0">✅</span>
+                      ) : (
+                        <CompleteButton scheduleId={inst.scheduleId} />
+                      )}
+
+                      <div
+                        className="flex-1 min-w-0 cursor-pointer"
+                        onClick={() => !deleteMode && openEditModal(inst)}
+                      >
+                        <div className={`font-pixel text-xs ${inst.done ? "text-border/40 line-through" : "text-border"}`}>
+                          {inst.title}
+                          <span className="ml-2 text-border/40 text-[10px]">
+                            {"★".repeat(inst.difficulty)}
+                          </span>
+                        </div>
+                        {inst.memo && (
+                          <div className="text-[10px] font-pixel text-border/50 truncate mt-0.5">
+                            {inst.memo}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <AddQuestModal
+        open={modalOpen}
+        onClose={() => { setModalOpen(false); setEditData(null); }}
+        initialDate={selectedDate ?? todayStr}
+        editData={editData}
+      />
+
+      {showLevelUp !== null && (
+        <LevelUpModal level={showLevelUp} onClose={() => setShowLevelUp(null)} />
+      )}
+    </div>
+  );
+}

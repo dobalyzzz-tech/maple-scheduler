@@ -49,6 +49,7 @@ function CalendarCell({
   const total = dayData?.instances.length ?? 0;
   const done = dayData?.instances.filter((i) => i.done).length ?? 0;
   const allDone = total > 0 && done === total;
+  const dayOfWeek = dateStr ? new Date(dateStr + "T00:00:00").getDay() : -1;
 
   let cellBg = "bg-[#F1E9D8]";
   if (isSelected) cellBg = "bg-[#44DDDD]";
@@ -62,7 +63,7 @@ function CalendarCell({
     >
       <span
         className={`font-pixel text-xs leading-none ${
-          isToday ? "text-white font-bold" : "text-border/70"
+          isToday ? "text-white font-bold" : dayOfWeek === 0 ? "text-red-500" : dayOfWeek === 6 ? "text-blue-500" : "text-border/70"
         }`}
       >
         {isToday ? "TODAY" : day}

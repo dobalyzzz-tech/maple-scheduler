@@ -157,7 +157,7 @@ export default function BackgroundGame() {
       const { data: inv } = await supabase.from("inventory").select("item_id").eq("user_id", user.id).eq("equipped", true);
       if (inv && inv.length > 0) {
         const { data: items } = await supabase.from("items").select("asset_url, name, category").in("id", inv.map((i: { item_id: string }) => i.item_id));
-        const bgItem = items?.find((i: { asset_url: string | null }) => i.asset_url && i.category === "background");
+        const bgItem = (items as { asset_url: string | null; category: string }[] | null)?.find((i) => i.asset_url && i.category === "background");
         if (bgItem?.asset_url) {
           setBg(bgItem.asset_url);
           setCharBottom(DEFAULT_BOTTOM);

@@ -8,9 +8,10 @@ export const supabase = createClient(
 
 // 구글 로그인
 export async function signInWithGoogle() {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || location.origin;
   return supabase.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: `${location.origin}/dashboard` },
+    options: { redirectTo: `${siteUrl}/auth/callback` },
   });
 }
 

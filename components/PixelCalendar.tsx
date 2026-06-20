@@ -38,18 +38,22 @@ function CalendarCell({
   isToday,
   isSelected,
   onSelect,
+  year,
+  month,
 }: {
   day: number;
   dayData: CalendarDay | undefined;
   isToday: boolean;
   isSelected: boolean;
   onSelect: () => void;
+  year: number;
+  month: number;
 }) {
   const dateStr = dayData?.date ?? "";
   const total = dayData?.instances.length ?? 0;
   const done = dayData?.instances.filter((i) => i.done).length ?? 0;
   const allDone = total > 0 && done === total;
-  const dayOfWeek = dateStr ? new Date(dateStr + "T00:00:00").getDay() : -1;
+  const dayOfWeek = new Date(year, month, day).getDay();
 
   let cellBg = "bg-[#F1E9D8]";
   if (isSelected) cellBg = "bg-[#44DDDD]";
@@ -144,6 +148,8 @@ export default function PixelCalendar({
                 isToday={isToday}
                 isSelected={isSelected}
                 onSelect={() => onSelectDate(dateStr)}
+                year={year}
+                month={month}
               />
             );
           })}
